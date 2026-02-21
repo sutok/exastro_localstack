@@ -1,0 +1,31 @@
+version: "3.8"
+services:
+  exastro:
+    image: exastro/it-automation:1.11.2-ja   # ← pullしたタグに合わせる
+    container_name: it-automation
+    privileged: true
+    extra_hosts:
+      - "exastro-it-automation:127.0.0.1"
+    ports:
+      - "8080:80"      # HTTP
+      - "10443:443"    # HTTPS
+    volumes:
+      - exastro-database:/exastro-database-volume
+      - exastro-file:/exastro-file-volume
+
+  localstack:
+    container_name: localstack
+    image: localstack/localstack:latest
+    ports:
+      - "127.0.0.1:4566:4566"            
+      - "127.0.0.1:4510-4559:4510-4559"
+    environment:
+      - DOCKER_HOST=unix:///var/run/docker.sock
+      #- SERVICES=s3 # 起動するサービスをS3に限定
+    volumes:
+      - "/var/run/docker.sock:/var/run/docker.sock"
+
+volumes:
+  exastro-database:
+  exastro-file:
+
