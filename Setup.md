@@ -206,11 +206,10 @@ provider "aws" {
 
   # 各サービスのエンドポイントを LocalStack に向ける
   endpoints {
-    ec2   = "http://localhost:4566"
-    elbv2 = "http://localhost:4566"
-    iam   = "http://localhost:4566"
-    s3    = "http://localhost:4566"
-    acm   = "http://localhost:4566"
+    ec2 = "http://localhost:4566"
+    iam = "http://localhost:4566"
+    s3  = "http://localhost:4566"
+    acm = "http://localhost:4566"
   }
 
   skip_credentials_validation = true  # 認証情報の検証をスキップ
@@ -283,15 +282,14 @@ Do you want to perform these actions?
 aws_vpc.main: Creating...
 aws_vpc.main: Creation complete after 1s [id=vpc-xxxxxxxx]
 ...
-Apply complete! Resources: XX added, 0 changed, 0 destroyed.
+Apply complete! Resources: 14 added, 0 changed, 0 destroyed.
 
 Outputs:
 
-alb_dns_name       = "myapp-alb.elb.localhost.localstack.cloud"
-app_private_ip     = "10.0.2.xxx"
-bastion_public_ip  = "10.0.1.xxx"
-db_private_ip      = "10.0.3.xxx"
 acm_certificate_arn = "arn:aws:acm:ap-northeast-1:000000000000:certificate/xxxx"
+app_private_ip      = "10.0.2.xxx"
+bastion_public_ip   = "10.0.1.xxx"
+db_private_ip       = "10.0.3.xxx"
 ```
 
 ---
@@ -309,11 +307,6 @@ aws --endpoint-url=http://localhost:4566 ec2 describe-vpcs \
 # EC2 インスタンス確認
 aws --endpoint-url=http://localhost:4566 ec2 describe-instances \
   --query 'Reservations[*].Instances[*].{ID:InstanceId,State:State.Name,Name:Tags[?Key==`Name`].Value|[0]}' \
-  --output table
-
-# ALB 確認
-aws --endpoint-url=http://localhost:4566 elbv2 describe-load-balancers \
-  --query 'LoadBalancers[*].{Name:LoadBalancerName,DNS:DNSName,State:State.Code}' \
   --output table
 
 # ACM 証明書確認
@@ -376,8 +369,8 @@ exastro/
     ├── provider.tf           # AWS provider + LocalStack エンドポイント
     ├── variables.tf          # 変数定義
     ├── vpc.tf                # VPC / Subnet / IGW / RouteTable
-    ├── security_groups.tf    # ALB / App / DB / Bastion の SG
+    ├── security_groups.tf    # App / DB / Bastion の SG
     ├── ec2.tf                # Bastion / App / MySQL インスタンス
-    ├── alb.tf                # ACM 証明書 / ALB / HTTP→HTTPS / HTTPS(443)
+    ├── alb.tf                # ACM 証明書 (ELB/ALB は Community版非対応のため省略)
     └── outputs.tf            # 出力値
 ```
