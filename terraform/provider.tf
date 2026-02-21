@@ -13,12 +13,9 @@ provider "aws" {
   region     = var.region
 
   endpoints {
-    ec2   = "http://localhost:4566"
-    elb   = "http://localhost:4566"
-    elbv2 = "http://localhost:4566"
-    iam   = "http://localhost:4566"
-    s3    = "http://localhost:4566"
-    acm   = "http://localhost:4566"
+    ec2 = "http://localhost:4566"
+    iam = "http://localhost:4566"
+    s3  = "http://localhost:4566"
   }
 
   skip_credentials_validation = true
