@@ -133,15 +133,104 @@ curl http://localhost:4566/_localstack/health | python3 -m json.tool
 
 ---
 
-## 4. Terraform 初期化
+## 4. LocalStack 向け AWS CLI 設定
 
-### 4-1. terraform ディレクトリへ移動
+LocalStack に対して AWS CLI コマンドを実行するには、ダミーの認証情報とエンドポイントの設定が必要です。
+
+### 4-1. AWS 認証情報の設定 (ダミー値)
+
+LocalStack は認証情報の検証を行いませんが、AWS CLI は認証情報が存在しないとエラーになります。
+以下のダミー値を設定してください。
+
+```bash
+aws configure
+```
+
+```
+AWS Access Key ID [None]: test
+AWS Secret Access Key [None]: test
+Default region name [None]: ap-northeast-1
+Default output format [None]: json
+```
+
+または環境変数で設定することも可能です。
+
+```bash
+export AWS_ACCESS_KEY_ID=test
+export AWS_SECRET_ACCESS_KEY=test
+export AWS_DEFAULT_REGION=ap-northeast-1
+```
+
+### 4-2. AWS CLI からの動作確認 (--endpoint-url 指定)
+
+LocalStack へのリクエストは `--endpoint-url` でエンドポイントを指定します。
+
+```bash
+# 例: S3 バケット一覧
+aws --endpoint-url=http://localhost:4566 s3 ls
+
+# 例: VPC 一覧
+aws --endpoint-url=http://localhost:4566 ec2 describe-vpcs
+```
+
+### 4-3. AWS CLI プロファイルで endpoint_url を固定する (任意)
+
+毎回 `--endpoint-url` を指定するのが煩雑な場合は、`~/.aws/config` にプロファイルとして登録できます。
+
+```bash
+# ~/.aws/config に追記
+cat >> ~/.aws/config << 'EOF'
+
+[profile localstack]
+region = ap-northeast-1
+endpoint_url = http://localhost:4566
+EOF
+```
+
+プロファイルを指定して実行します。
+
+```bash
+aws --profile localstack s3 ls
+aws --profile localstack ec2 describe-vpcs
+```
+
+### 4-4. Terraform の LocalStack 向けエンドポイント設定
+
+`terraform/provider.tf` では、各AWSサービスのエンドポイントを LocalStack へ向けるよう設定しています。
+
+```hcl
+provider "aws" {
+  access_key = "test"          # LocalStack 用ダミーキー
+  secret_key = "test"          # LocalStack 用ダミーシークレット
+  region     = var.region
+
+  # 各サービスのエンドポイントを LocalStack に向ける
+  endpoints {
+    ec2   = "http://localhost:4566"
+    elbv2 = "http://localhost:4566"
+    iam   = "http://localhost:4566"
+    s3    = "http://localhost:4566"
+    acm   = "http://localhost:4566"
+  }
+
+  skip_credentials_validation = true  # 認証情報の検証をスキップ
+  skip_metadata_api_check     = true  # EC2 メタデータ API チェックをスキップ
+  skip_requesting_account_id  = true  # アカウントID取得をスキップ
+  s3_use_path_style           = true  # S3 パス形式を使用 (LocalStack 互換)
+}
+```
+
+---
+
+## 5. Terraform 初期化
+
+### 5-1. terraform ディレクトリへ移動
 
 ```bash
 cd terraform/
 ```
 
-### 4-2. 初期化
+### 5-2. 初期化
 
 ```bash
 terraform init
@@ -159,7 +248,7 @@ Terraform has been successfully initialized!
 
 ---
 
-## 5. 実行計画の確認
+## 6. 実行計画の確認
 
 ```bash
 terraform plan
@@ -173,7 +262,7 @@ terraform plan
 
 ---
 
-## 6. リソースのデプロイ
+## 7. リソースのデプロイ
 
 ```bash
 terraform apply
@@ -207,9 +296,9 @@ acm_certificate_arn = "arn:aws:acm:ap-northeast-1:000000000000:certificate/xxxx"
 
 ---
 
-## 7. 動作確認
+## 8. 動作確認
 
-### 7-1. LocalStack 上のリソース確認
+### 8-1. LocalStack 上のリソース確認
 
 ```bash
 # VPC 確認
@@ -235,7 +324,7 @@ aws --endpoint-url=http://localhost:4566 acm list-certificates \
 
 ---
 
-## 8. リソースの削除
+## 9. リソースの削除
 
 ```bash
 terraform destroy
